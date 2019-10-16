@@ -89,6 +89,7 @@ def get_important_values(row):
 
         if all_appointment_i_start_dates:
             new_row['start_date'][i] = _strftime(min(all_appointment_i_start_dates))
+            new_row['start_year'][i] = min(all_appointment_i_start_dates).year
 
         # If a single appointment (`i`) has multiple end dates (rare) take the max
         # Because active judges may not have an end date, need to first check if there are end dates
@@ -99,6 +100,7 @@ def get_important_values(row):
 
         if potential_end_dates:
             new_row['end_date'][i] = _strftime(max(potential_end_dates))
+            new_row['end_year'][i] = max(potential_end_dates).year
         else:
             new_row['end_date'][i] = None
 
@@ -135,7 +137,9 @@ def main():
             for i in range(1, max_num_appointments + 1):
                 flat_row = copy.deepcopy(nested_row)
                 flat_row = dict(flat_row)
-                for col in APPT_COLUMNS_TO_FILL + ['start_date', 'end_date']:
+                for col in (
+                    APPT_COLUMNS_TO_FILL + [
+                        'start_date', 'end_date', 'start_year', 'end_year']):
                     if nested_row.get(col, {}):
                         flat_row[col] = nested_row[col].get(i, '')
                     else:

@@ -1,0 +1,12 @@
+version: '1'
+services:
+
+  postgres:
+    container_name: postgres
+    image: postgres:11.5-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - ~/courts-data/postgres:/var/lib/postgresql/data
+    env_file: courts.env
+    restart: on-failure

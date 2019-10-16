@@ -1,11 +1,14 @@
-from sqlalchemy import Column, Date, Integer, String, Table
+from sqlalchemy import Column, Date, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from sqlalchemy_utils import generic_repr
 
-from base import Base
+from models.base import Base
 
 
+@generic_repr
 class Demographic(Base):
     __tablename__ = 'demographic'
+
     nid = Column(Integer, primary_key=True)
     jid = Column(Integer)
     last_name = Column(String)
@@ -25,56 +28,55 @@ class Demographic(Base):
     gender = Column(String)
     race_or_ethnicity = Column(String)
 
+    appointments = relationship('Appointment', back_populates='demographic', uselist=True)
+    education = relationship('Education', back_populates='demographic', uselist=True)
 
-def Appointment(Base):
+
+@generic_repr
+class Appointment(Base):
     __tablename__ = 'appointment'
 
+    id = Column(Integer, primary_key=True)
+    nid = Column(Integer, ForeignKey('demographic.nid'))
+    court_type = Column(String)
+    court_name = Column(String)
+    appointment_title = Column(String)
+    appointing_president = Column(String)
+    party_of_appointing_president = Column(String)
+    reappointing_president = Column(String)
+    party_of_reappointing_president = Column(String)
+    aba_rating = Column(String)
+    seat_id = Column(String)
+    statute_authorizing_new_seat = Column(String)
+    recess_appointment_date = Column(Date)
+    nomination_date = Column(Date)
+    committee_referral_date = Column(Date)
+    hearing_date = Column(Date)
+    judiciary_committee_action = Column(String)
+    committee_action_date = Column(Date)
+    senate_vote_type = Column(String)
+    ayes_nays = Column(String)
+    confirmation_date = Column(Date)
+    commission_date = Column(Date)
+    service_as_chief_judge_begin = Column(Date)
+    service_as_chief_judge_end = Column(Date)
+    second_service_as_chief_judge_begin = Column(Date)
+    second_service_as_chief_judge_end = Column(Date)
+    senior_status_date = Column(Date)
+    termination = Column(String)
+    termination_date = Column(Date)
 
-Court Type (1)
-Court Name (1)
-Appointment Title (1)
-Appointing President (1)
-Party of Appointing President (1)
-Reappointing President (1)
-Party of Reappointing President (1)
-ABA Rating (1)
-Seat ID (1)
-Statute Authorizing New Seat (1)
-Recess Appointment Date (1)
-Nomination Date (1)
-Committee Referral Date (1)
-Hearing Date (1)
-Judiciary Committee Action (1)
-Committee Action Date (1)
-Senate Vote Type (1)
-Ayes/Nays (1)
-Confirmation Date (1)
-Commission Date (1)
-Service as Chief Judge, Begin (1)
-Service as Chief Judge, End (1)
-2nd Service as Chief Judge, Begin (1)
-2nd Service as Chief Judge, End (1)
-Senior Status Date (1)
-Termination (1)
-Termination Date (1)
+    demographic = relationship('Demographic', back_populates='appointments', uselist=False)
 
 
+@generic_repr
+class Education(Base):
+    __tablename__ = 'education'
 
+    id = Column(Integer, primary_key=True)
+    nid = Column(Integer, ForeignKey('demographic.nid'))
+    school = Column(String)
+    degree = Column(String)
+    degree_year = Column(Integer)
 
-School (1)
-Degree (1)
-Degree Year (1)
-School (2)
-Degree (2)
-Degree Year (2)
-School (3)
-Degree (3)
-Degree Year (3)
-School (4)
-Degree (4)
-Degree Year (4)
-School (5)
-Degree (5)
-Degree Year (5)
-Professional Career
-Other Nominations/Recess Appointments
+    demographic = relationship('Demographic', back_populates='education', uselist=False)

@@ -8,7 +8,7 @@ import rapidjson as json
 DATE_FORMAT = '%Y-%m-%d'
 
 
-def partition_data(rows):
+def partition_data(rows, court_type=''):
     partitioned_data = defaultdict(dict)
     for year in range(1920, 2020, 2):
         for row in rows:
@@ -24,7 +24,7 @@ def partition_data(rows):
     return partitioned_data
 
 
-def date_filter(row, year):
+def date_filter(row, year, step_size=2):
     return (row['start_date'].year <= year and (
         (row.get('end_date') and row.get('end_date').year >= year) or
         not row['end_date']))
