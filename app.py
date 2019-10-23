@@ -9,88 +9,101 @@ from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
 data = json.load(open('./data/partitioned_appeals_counts.json'))
-
-aggregated_counts = defaultdict(lambda: defaultdict(int))
-for year, vals in data.items():
+"""
+{
+    year: {
+        <Appeals Court Name>: {
+            'Republican': <count>,
+            'Democratic': <count>,
+        }
+    },
+    year: ...
+}
+"""
+cumulative_counts = []
+delta_counts = []
+last_year_counts = {'Democratic': 0, 'Republican': 0}
+for i, (year, vals) in enumerate(sorted(data.items(), key=lambda x: x[0])):
+    aggregated_counts = defaultdict(int)
     for counts_dict in vals.values():
         for party, count in counts_dict.items():
             if party in ('Democratic', 'Republican'):
-                aggregated_counts[year][party] += count
+                aggregated_counts[party] += count
 
-sorted_aggregated_counts = sorted(aggregated_counts.items(), key=lambda x: x[0])
-years = [x[0] for x in sorted_aggregated_counts]
+    delta_counts_dict = defaultdict(int)
+    for party in ('Democratic', 'Republican'):
+        delta_counts_dict[party] = aggregated_counts[party] - last_year_counts[party]
+        last_year_counts[party] = aggregated_counts[party]
+    cumulative_counts.append((year, aggregated_counts))
+    if i == 0:
+        # Zero out the first data point
+        delta_counts_dict = {'Democratic': 0, 'Republican': 0}
+    delta_counts.append((year, delta_counts_dict))
+
+
+years = [x[0] for x in cumulative_counts]
 
 party_colors = [('Democratic', '#3440eb'), ('Republican', '#cc0808')]
 
-delta_counts = [
-    (
-        year,
-        {
-            party: counts_dict[party] - sorted_aggregated_counts[i-1][1][party]
-            for party, _ in party_colors
-        },
-    ) for i, (year, counts_dict) in enumerate(sorted_aggregated_counts[1:], 1)
-]
-
 all_counts = [
-    count for _, counts_dict in sorted_aggregated_counts for count in counts_dict.values()]
+    count for _, counts_dict in cumulative_counts for count in counts_dict.values()]
 
 delta_all_counts = [
     count for _, counts_dict in delta_counts for count in counts_dict.values()]
 
 min_years = str(int(min(years)) - 2)
 max_years = str(int(max(years)) + 2)
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div(
     id='graphs',
     children=[
-    dcc.Graph(
-        id='line-graph',
-        figure={
-            'data': [
-                go.Scatter(
-                    x=years, y=[counts_dict[party] for _, counts_dict in sorted_aggregated_counts],
-                    marker={'size': 10, 'opacity': 1, 'color': color},
-                    text=party, name=party, hoverinfo='y',
-                ) for party, color in party_colors
-            ],
-            'layout': go.Layout(
-                xaxis={'title': 'Year', 'range': [min_years, max_years]},
-                yaxis={
-                    'title': 'Number of Appeals Judges',
-                    'range': [min(all_counts), max(all_counts)]},
-                legend={'x': 0, 'y': 1},
-                title="Number of Appeals Judges by Appointing President's Party"
-            )
-        }
-    ),
-    dcc.Graph(
-        id='delta-bar-graph',
-        figure={
-            'data': [
-                go.Bar(
-                    name=party,
-                    x=years[1:],
-                    y=[counts_dict[party] for _, counts_dict in delta_counts],
-                    marker_color=color,
-                ) for party, color in party_colors
-            ],
-            'layout': go.Layout(
-                xaxis={'title': 'Year', 'range': [min_years, max_years]},
-                yaxis={
-                    'title': 'Change in Number of Judges',
-                    'range': [min(delta_all_counts), max(delta_all_counts)]
-                },
-                legend={'x': 0, 'y': 1},
-                title="Change in Number of Judgess by Appointing President's Party",
-                barmode='relative',
-            )
-        }
-    )
+        dcc.Graph(
+            id='line-graph',
+            figure={
+                'data': [
+                    go.Scatter(
+                        x=years,
+                        y=[counts_dict[party] for _, counts_dict in cumulative_counts],
+                        marker={'size': 10, 'opacity': 1, 'color': color},
+                        text=party, name=party, hoverinfo='y',
+                    ) for party, color in party_colors
+                ],
+                'layout': go.Layout(
+                    xaxis={'title': 'Year', 'range': [min_years, max_years]},
+                    yaxis={
+                        'title': 'Number of Appeals Judges',
+                        'range': [0, max(all_counts)]},
+                    legend={'x': 0, 'y': 1},
+                    title="Number of Appeals Judges by Appointing President's Party"
+                )
+            }
+        ),
+        dcc.Graph(
+            id='delta-bar-graph',
+            figure={
+                'data': [
+                    go.Bar(
+                        name=party,
+                        x=years[1:],
+                        y=[counts_dict[party] for _, counts_dict in delta_counts][1:],
+                        marker_color=color,
+                    ) for party, color in party_colors
+                ],
+                'layout': go.Layout(
+                    xaxis={'title': 'Year', 'range': [min_years, max_years]},
+                    yaxis={
+                        'title': 'Change in Number of Judges',
+                        'range': [min(delta_all_counts), max(delta_all_counts)]
+                    },
+                    legend={'x': 0, 'y': 1},
+                    title="Change in Number of Judgess by Appointing President's Party",
+                    barmode='relative',
+                )
+            }
+        )
     ]
 )
 
