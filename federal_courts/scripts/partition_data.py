@@ -9,18 +9,21 @@ DATE_FORMAT = '%Y-%m-%d'
 
 
 def partition_data(rows, court_type=''):
-    partitioned_data = defaultdict(dict)
+    partitioned_data = defaultdict(lambda: defaultdict(dict))
     for year in range(1920, 2020, 2):
         for row in rows:
+            if row['Court Type'] != 'U.S. Court of Appeals':
+                continue
             # some blanks from bad data
             if not row['start_date']:
                 continue
-            if date_filter(row):
+            if date_filter(row, year):
+                court_name = row['Court Name']
                 party = row['Party of Appointing President']
-                if partitioned_data[year].get(party):
-                    partitioned_data[year][party] += 1
+                if partitioned_data[year].get(court_name, {}).get(party):
+                    partitioned_data[year][court_name][party] += 1
                 else:
-                    partitioned_data[year][party] = 1
+                    partitioned_data[year][court_name][party] = 1
     return partitioned_data
 
 

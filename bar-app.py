@@ -26,7 +26,6 @@ sorted_aggregated_counts = sorted(aggregated_counts.items(), key=lambda x: x[0])
 years = [x[0] for x in sorted_aggregated_counts]
 
 party_colors = [('Democratic', '#3440eb'), ('Republican', '#cc0808')]
-
 delta_counts = [
     (
         year,
@@ -36,38 +35,10 @@ delta_counts = [
         },
     ) for i, (year, counts_dict) in enumerate(sorted_aggregated_counts[1:], 1)
 ]
-
-all_counts = [
-    count for _, counts_dict in sorted_aggregated_counts for count in counts_dict.values()]
-
 delta_all_counts = [
     count for _, counts_dict in delta_counts for count in counts_dict.values()]
 
-min_years = str(int(min(years)) - 2)
-max_years = str(int(max(years)) + 2)
 app.layout = html.Div(
-    id='graphs',
-    children=[
-    dcc.Graph(
-        id='line-graph',
-        figure={
-            'data': [
-                go.Scatter(
-                    x=years, y=[counts_dict[party] for _, counts_dict in sorted_aggregated_counts],
-                    marker={'size': 10, 'opacity': 1, 'color': color},
-                    text=party, name=party, hoverinfo='y',
-                ) for party, color in party_colors
-            ],
-            'layout': go.Layout(
-                xaxis={'title': 'Year', 'range': [min_years, max_years]},
-                yaxis={
-                    'title': 'Number of Appeals Judges',
-                    'range': [min(all_counts), max(all_counts)]},
-                legend={'x': 0, 'y': 1},
-                title="Number of Appeals Judges by Appointing President's Party"
-            )
-        }
-    ),
     dcc.Graph(
         id='delta-bar-graph',
         figure={
@@ -80,7 +51,7 @@ app.layout = html.Div(
                 ) for party, color in party_colors
             ],
             'layout': go.Layout(
-                xaxis={'title': 'Year', 'range': [min_years, max_years]},
+                xaxis={'title': 'Year', 'range': [min(years), max(years)]},
                 yaxis={
                     'title': 'Change in Number of Judges',
                     'range': [min(delta_all_counts), max(delta_all_counts)]
@@ -91,7 +62,6 @@ app.layout = html.Div(
             )
         }
     )
-    ]
 )
 
 if __name__ == '__main__':
