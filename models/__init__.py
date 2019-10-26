@@ -1,11 +1,11 @@
-from .demographics import (
+from .models import (
     Appointment,
-    Demographic,
     Education,
+    Judge,
 )
 
 __all__ = (
     "Appointment",
-    "Demographic",
     "Education",
+    "Judge",
 )

@@ -33,7 +33,8 @@ def get_session():
     try:
         yield session
         session.commit()
-    except:
+    except Exception as ex:
+        print(ex)
         session.rollback()
         raise
     finally:

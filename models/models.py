@@ -6,8 +6,8 @@ from models.base import Base
 
 
 @generic_repr
-class Demographic(Base):
-    __tablename__ = 'demographic'
+class Judge(Base):
+    __tablename__ = 'judge'
 
     nid = Column(Integer, primary_key=True)
     jid = Column(Integer)
@@ -28,8 +28,8 @@ class Demographic(Base):
     gender = Column(String)
     race_or_ethnicity = Column(String)
 
-    appointments = relationship('Appointment', back_populates='demographic', uselist=True)
-    education = relationship('Education', back_populates='demographic', uselist=True)
+    appointments = relationship('Appointment', back_populates='judge', uselist=True)
+    educations = relationship('Education', back_populates='judge', uselist=True)
 
 
 @generic_repr
@@ -37,7 +37,7 @@ class Appointment(Base):
     __tablename__ = 'appointment'
 
     id = Column(Integer, primary_key=True)
-    nid = Column(Integer, ForeignKey('demographic.nid'))
+    nid = Column(Integer, ForeignKey('judge.nid'))
     court_type = Column(String)
     court_name = Column(String)
     appointment_title = Column(String)
@@ -58,15 +58,15 @@ class Appointment(Base):
     ayes_nays = Column(String)
     confirmation_date = Column(Date)
     commission_date = Column(Date)
-    service_as_chief_judge_begin = Column(Date)
-    service_as_chief_judge_end = Column(Date)
-    second_service_as_chief_judge_begin = Column(Date)
-    second_service_as_chief_judge_end = Column(Date)
+    service_as_chief_judge_begin = Column(Integer)
+    service_as_chief_judge_end = Column(Integer)
+    second_service_as_chief_judge_begin = Column(Integer)
+    second_service_as_chief_judge_end = Column(Integer)
     senior_status_date = Column(Date)
     termination = Column(String)
     termination_date = Column(Date)
 
-    demographic = relationship('Demographic', back_populates='appointments', uselist=False)
+    judge = relationship('Judge', back_populates='appointments', uselist=False)
 
 
 @generic_repr
@@ -74,9 +74,9 @@ class Education(Base):
     __tablename__ = 'education'
 
     id = Column(Integer, primary_key=True)
-    nid = Column(Integer, ForeignKey('demographic.nid'))
+    nid = Column(Integer, ForeignKey('judge.nid'))
     school = Column(String)
     degree = Column(String)
     degree_year = Column(Integer)
 
-    demographic = relationship('Demographic', back_populates='education', uselist=False)
+    judge = relationship('Judge', back_populates='educations', uselist=False)
