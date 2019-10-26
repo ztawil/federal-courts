@@ -21,16 +21,24 @@ def get_models(row):
         for col, slug_col in column_name_maps.demographic_col_map.items()
     })
 
-    appointment_dict = defaultdict(dict)
     for i in range(1, MAX_DUP_COLS):
+        appointment_dict = {}
         for col, slug_col in column_name_maps.appt_col_map.items():
             appt_row_val = row.get(_get_column_pattern(col, i))
             if appt_row_val:
-                appointment_dict[i][slug_col] = clean_data(slug_col, appt_row_val)
-        if len(appointment_dict[i]) == 0:
-            appointment_dict.pop(i)
+                appointment_dict[slug_col] = clean_data(slug_col, appt_row_val)
+        if len(appointment_dict) == 0:
             continue
-        judge_row.appointments.append(Appointment(**appointment_dict[i]))
+
+        # In case there are multiple start dates due to bad data, assume the earliest
+        appointment_dict['start_date'] = min(
+            appointment_dict[date_col]
+            for date_col in column_name_maps.START_DATE_COLUMNS_TO_PARSE
+            if appointment_dict.get(date_col))
+
+        appointment_dict['end_date'] = appointment_dict.get('termination_date', None)
+
+        judge_row.appointments.append(Appointment(**appointment_dict))
 
     education_dict = defaultdict(dict)
     for i in range(1, MAX_DUP_COLS):

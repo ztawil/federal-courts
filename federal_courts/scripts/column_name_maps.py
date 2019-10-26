@@ -1,4 +1,3 @@
-
 DEMOGRAPHIC_COLUMNS = [
     'nid',
     'jid',
@@ -106,8 +105,10 @@ appt_col_map = {
   "Termination Date": "termination_date"
 }
 
+
 # Columns that come in as `<COL_NAME> (n)` for multiple degrees
 EDU_COLUMNS_TO_FILL = ['School', 'Degree', 'Degree Year']
+
 
 edu_col_map = {
     'School': 'school',
@@ -116,5 +117,4 @@ edu_col_map = {
 }
 
 
-START_DATE_COLUMNS_TO_PARSE = ['Confirmation Date', 'Recess Appointment Date']
-END_DATE_COLUMNS_TO_PARSE = ['Termination Date']
+START_DATE_COLUMNS_TO_PARSE = ['confirmation_date', 'recess_appointment_date', 'commission_date']

@@ -65,6 +65,8 @@ class Appointment(Base):
     senior_status_date = Column(Date)
     termination = Column(String)
     termination_date = Column(Date)
+    start_date = Column(Date)
+    end_date = Column(Date)
 
     judge = relationship('Judge', back_populates='appointments', uselist=False)
 
