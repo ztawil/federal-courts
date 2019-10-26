@@ -7,6 +7,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 
 data = json.load(open('./data/partitioned_appeals_counts.json'))
@@ -57,54 +58,52 @@ max_years = str(int(max(years)) + 2)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+for party, color in party_colors:
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=[counts_dict[party] for _, counts_dict in cumulative_counts],
+            marker={'size': 10, 'opacity': 1, 'color': color},
+            text=party, name=party, hoverinfo='y'),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Bar(
+            name=party,
+            x=years[1:],
+            y=[counts_dict[party] for _, counts_dict in delta_counts][1:],
+            marker_color=color, hoverinfo='y', showlegend=False,
+            ), secondary_y=True,
+    )
+
+ymin = int(min(delta_all_counts) * 1.5)
+ymax = int(max(all_counts) * 1.1)
+fig.update_layout(
+    xaxis={
+        'title': 'Year',
+        'range': [min_years, max_years],
+        'spikemode': 'across',
+        'spikesnap': 'cursor',
+        'spikecolor': 'black',
+        'spikethickness': 1,
+    },
+    yaxis={'title': 'Number of Appeals Judges', 'range': [ymin, ymax]},
+    yaxis2={
+        'title': '\u0394 Number of Appeals Judges',
+        'range': [ymin, ymax],
+        'tickvals': [],
+        'tickmode': 'array',
+    },
+    barmode='relative',
+    hovermode='x',
+    spikedistance=-1,
+)
+
 app.layout = html.Div(
-    id='graphs',
-    children=[
-        dcc.Graph(
-            id='line-graph',
-            figure={
-                'data': [
-                    go.Scatter(
-                        x=years,
-                        y=[counts_dict[party] for _, counts_dict in cumulative_counts],
-                        marker={'size': 10, 'opacity': 1, 'color': color},
-                        text=party, name=party, hoverinfo='y',
-                    ) for party, color in party_colors
-                ],
-                'layout': go.Layout(
-                    xaxis={'title': 'Year', 'range': [min_years, max_years]},
-                    yaxis={
-                        'title': 'Number of Appeals Judges',
-                        'range': [0, max(all_counts)]},
-                    legend={'x': 0, 'y': 1},
-                    title="Number of Appeals Judges by Appointing President's Party"
-                )
-            }
-        ),
-        dcc.Graph(
-            id='delta-bar-graph',
-            figure={
-                'data': [
-                    go.Bar(
-                        name=party,
-                        x=years[1:],
-                        y=[counts_dict[party] for _, counts_dict in delta_counts][1:],
-                        marker_color=color,
-                    ) for party, color in party_colors
-                ],
-                'layout': go.Layout(
-                    xaxis={'title': 'Year', 'range': [min_years, max_years]},
-                    yaxis={
-                        'title': 'Change in Number of Judges',
-                        'range': [min(delta_all_counts), max(delta_all_counts)]
-                    },
-                    legend={'x': 0, 'y': 1},
-                    title="Change in Number of Judgess by Appointing President's Party",
-                    barmode='relative',
-                )
-            }
-        )
-    ]
+    id='graphs', children=[dcc.Graph(id='da-graphs', figure=fig)]
 )
 
 if __name__ == '__main__':
