@@ -2,6 +2,7 @@ import argparse
 import csv
 import os
 from collections import defaultdict
+from datetime import datetime
 
 import column_name_maps
 from database_utils import get_session, recreate_db
@@ -9,7 +10,6 @@ from models.models import Appointment, Education, Judge
 
 
 DATE_FORMAT = '%Y-%m-%d'
-
 MAX_DUP_COLS = 6
 
 
@@ -36,7 +36,15 @@ def get_models(row):
             for date_col in column_name_maps.START_DATE_COLUMNS_TO_PARSE
             if appointment_dict.get(date_col))
 
+        appointment_dict['start_year'] = datetime.strptime(
+            appointment_dict['start_date'], DATE_FORMAT).year
+
         appointment_dict['end_date'] = appointment_dict.get('termination_date', None)
+        if appointment_dict['end_date']:
+            appointment_dict['end_year'] = datetime.strptime(
+                appointment_dict['end_date'], DATE_FORMAT).year
+        else:
+            appointment_dict['end_year'] = None
 
         judge_row.appointments.append(Appointment(**appointment_dict))
 
@@ -84,18 +92,6 @@ def _clean_year(value):
     return int(value[-4:]) or None
 
 
-def main():
-    args = _parse_args()
-    file_name = args.file_name
-    directory = args.directory
-
-    recreate_db()
-    with get_session() as session:
-        with open(os.path.join(directory, file_name)) as f:
-            for row in csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC):
-                session.add(get_models(row))
-
-
 def _parse_args():
     parser = argparse.ArgumentParser()
 
@@ -108,6 +104,18 @@ def _parse_args():
         help="File name to use")
 
     return parser.parse_args()
+
+
+def main():
+    args = _parse_args()
+    file_name = args.file_name
+    directory = args.directory
+
+    recreate_db()
+    with get_session() as session:
+        with open(os.path.join(directory, file_name)) as f:
+            for row in csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC):
+                session.add(get_models(row))
 
 
 if __name__ == "__main__":

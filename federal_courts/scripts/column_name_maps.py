@@ -19,7 +19,7 @@ DEMOGRAPHIC_COLUMNS = [
     'Race or Ethnicity'
  ]
 
-# demographic_col_map = {col: _slugify(col) for col in DEMOGRAPHIC_COLUMNS} 
+# demographic_col_map = {col: _slugify(col) for col in DEMOGRAPHIC_COLUMNS}
 
 demographic_col_map = {
     "nid": "nid",

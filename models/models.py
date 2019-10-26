@@ -66,7 +66,9 @@ class Appointment(Base):
     termination = Column(String)
     termination_date = Column(Date)
     start_date = Column(Date)
+    start_year = Column(Integer)
     end_date = Column(Date)
+    end_year = Column(Integer)
 
     judge = relationship('Judge', back_populates='appointments', uselist=False)
 
