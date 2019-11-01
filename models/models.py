@@ -92,3 +92,11 @@ class YearParty(Base):
 
     year = Column(Integer, primary_key=True)
     party = Column(String, primary_key=True)
+
+
+@generic_repr
+class Court(Base):
+    __tablename__ = 'court'
+
+    court_type = Column(String, primary_key=True)
+    court_name = Column(String, primary_key=True)

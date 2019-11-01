@@ -6,7 +6,7 @@ from datetime import datetime
 
 import column_name_maps
 from database_utils import get_session, recreate_db
-from models.models import Appointment, Education, Judge
+from models.models import Appointment, Court, Education, Judge
 
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -143,6 +143,16 @@ def main():
                     ('Democratic'),
                     ('Republican')) AS party_table (party)) as party_sq_party
                 ON 1 = 1)
+            """
+        )
+
+        conn.execute(
+            """
+            INSERT INTO court(court_type, court_name) (
+                SELECT court_type, court_name
+                FROM appointment
+                GROUP BY court_type, court_name
+            )
             """
         )
 

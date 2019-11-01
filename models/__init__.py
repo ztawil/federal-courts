@@ -1,5 +1,6 @@
 from .models import (
     Appointment,
+    Court,
     Education,
     Judge,
     YearParty
@@ -7,6 +8,7 @@ from .models import (
 
 __all__ = (
     "Appointment",
+    "Court",
     "Education",
     "Judge",
     "YearParty"

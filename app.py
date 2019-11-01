@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import math
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import dash
 import dash_core_components as dcc
@@ -11,23 +11,24 @@ from plotly.subplots import make_subplots
 from sqlalchemy import sql
 
 from database_utils import get_session
-from models.models import Appointment, YearParty
+from models.models import Appointment, Court, YearParty
 
 
 start_year, end_year = 1900, 2020
 party_colors = {'Democratic': '#3440eb', 'Republican': '#cc0808'}
 
 with get_session() as session:
-    court_types = [
-        x[0] for x in
+    court_type_name = OrderedDict(
+        (x[0], x[1]) for x in
         session
-        .query(sql.func.distinct(Appointment.court_type))
-        .filter(Appointment.court_type.notin_([
+        .query(Court.court_type, sql.func.array_agg(Court.court_name))
+        .filter(Court.court_type.notin_([
             'U.S. Circuit Court (1801-1802)',
             'U.S. Circuit Court (1869-1911)',
             'U.S. Circuit Court (other)']))
-        .order_by(Appointment.court_type)
-    ]
+        .group_by(Court.court_type)
+        .order_by(Court.court_type)
+    )
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -41,7 +42,10 @@ app.layout = html.Div(
             children=[
                 dcc.Dropdown(
                     id='court-type-dd',
-                    options=[{'label': ct, 'value': ct} for ct in court_types]
+                    options=[{'label': ct, 'value': ct} for ct in court_type_name.keys()]
+                ),
+                dcc.Dropdown(
+                    id='court-name-dd',
                 )
             ]
         ),
@@ -55,10 +59,27 @@ app.layout = html.Div(
 
 
 @app.callback(
-    Output('line-graph', 'figure'),
+    Output('court-name-dd', 'options'),
     [Input('court-type-dd', 'value')]
 )
-def update_line_graph(court_type_select):
+def update_court_name(court_type_select):
+    court_names = []
+
+    if court_type_select:
+        court_type_list = [court_type_select]
+    else:
+        court_type_list = court_type_name.keys()
+
+    for court_type in court_type_list:
+        court_names.extend(court_type_name[court_type])
+    return [{'label': cn, 'value': cn} for cn in sorted(court_names)]
+
+
+@app.callback(
+    Output('line-graph', 'figure'),
+    [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
+)
+def update_line_graph(court_type_select, court_name_select):
 
     join_conditions = [
         # Join condition for if the judge was serving that year
@@ -74,6 +95,9 @@ def update_line_graph(court_type_select):
 
     if court_type_select:
         join_conditions.append(Appointment.court_type.in_([court_type_select]))
+
+    if court_name_select:
+        join_conditions.append(Appointment.court_name.in_([court_name_select]))
 
     with get_session() as session:
         counts_query = (
