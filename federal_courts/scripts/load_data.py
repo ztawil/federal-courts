@@ -21,6 +21,11 @@ def get_models(row):
         for col, slug_col in column_name_maps.demographic_col_map.items()
     })
 
+    # A judge can have multiple appointments. There are a lot of columns associated with an apptmnet
+    # and they are in the data as "<Column Description (N)>", go through and link all of these
+    # together. There is no way of knowning how many (N) a judge may have and it's not sufficient to
+    # just look for one column that has data, so loop through and look if _any_ of the appointment
+    # pattern columns have data up to the MAX_DUP_COLS appointment.
     for i in range(1, MAX_DUP_COLS):
         appointment_dict = {}
         for col, slug_col in column_name_maps.appt_col_map.items():
@@ -39,7 +44,18 @@ def get_models(row):
         appointment_dict['start_year'] = datetime.strptime(
             appointment_dict['start_date'], DATE_FORMAT).year
 
-        appointment_dict['end_date'] = appointment_dict.get('termination_date', None)
+        # Multiple columns indicate a judgeship ending, take the min of them if duplicates.
+        potential_end_dates = [
+            appointment_dict[date_col]
+            for date_col in column_name_maps.END_DATE_COLUMNS_TO_PARSE
+            if appointment_dict.get(date_col)]
+
+        # Empty list means still in job
+        if not potential_end_dates:
+            appointment_dict['end_date'] = None
+        else:
+            appointment_dict['end_date'] = min(potential_end_dates)
+
         if appointment_dict['end_date']:
             appointment_dict['end_year'] = datetime.strptime(
                 appointment_dict['end_date'], DATE_FORMAT).year
@@ -116,6 +132,19 @@ def main():
         with open(os.path.join(directory, file_name)) as f:
             for row in csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC):
                 session.add(get_models(row))
+
+        conn = session.connection()
+        conn.execute(
+            """
+            INSERT INTO year_party(year, party) (
+                SELECT year, party
+                FROM (SELECT generate_series(1900, 2020, 2) AS year) as year_sq
+                JOIN (SELECT party FROM (VALUES
+                    ('Democratic'),
+                    ('Republican')) AS party_table (party)) as party_sq_party
+                ON 1 = 1)
+            """
+        )
 
 
 if __name__ == "__main__":

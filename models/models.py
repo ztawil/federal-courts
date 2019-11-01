@@ -84,3 +84,11 @@ class Education(Base):
     degree_year = Column(Integer)
 
     judge = relationship('Judge', back_populates='educations', uselist=False)
+
+
+@generic_repr
+class YearParty(Base):
+    __tablename__ = 'year_party'
+
+    year = Column(Integer, primary_key=True)
+    party = Column(String, primary_key=True)

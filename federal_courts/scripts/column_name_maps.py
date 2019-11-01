@@ -118,3 +118,4 @@ edu_col_map = {
 
 
 START_DATE_COLUMNS_TO_PARSE = ['confirmation_date', 'recess_appointment_date', 'commission_date']
+END_DATE_COLUMNS_TO_PARSE = ['senior_status_date', 'termination_date']
