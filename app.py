@@ -133,6 +133,7 @@ def update_line_graph(court_type_select):
                 ), secondary_y=True,
         )
 
+    y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
     fig.update_layout(
         xaxis={
             'title': 'Year',
@@ -142,11 +143,11 @@ def update_line_graph(court_type_select):
             'spikecolor': 'black',
             'spikethickness': 1,
         },
-        yaxis={'title': 'Number of Judges', 'range': [ymin * 1.5, math.ceil(ymax * 1.2)]},
+        yaxis={'title': 'Number of Judges', 'range': y_range},
         yaxis2={
             'title': '\u0394 Number of Judges',
-            'range': [ymin * 1.5, ymax],
-            'tickvals': [],
+            'range': y_range,
+            'tickvals': [],  # don't want to show ticks
             'tickmode': 'array',
         },
 
