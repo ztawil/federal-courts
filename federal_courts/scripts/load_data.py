@@ -63,6 +63,15 @@ def get_models(row):
         else:
             appointment_dict['end_year'] = None
 
+        if appointment_dict.get('confirmation_date') and appointment_dict.get('nomination_date'):
+            timedelta_to_confirm = (
+                datetime.strptime(appointment_dict['confirmation_date'], DATE_FORMAT) -
+                datetime.strptime(appointment_dict['nomination_date'], DATE_FORMAT)
+            )
+            appointment_dict['days_to_confirm'] = timedelta_to_confirm.days
+        else:
+            appointment_dict['days_to_confirm'] = None
+
         judge_row.appointments.append(Appointment(**appointment_dict))
 
     education_dict = defaultdict(dict)
@@ -177,7 +186,7 @@ def main():
             """
             INSERT INTO year_party(year, party) (
                 SELECT year, party
-                FROM (SELECT generate_series(1900, 2020, 2) AS year) as year_sq
+                FROM (SELECT generate_series(1901, 2021, 2) AS year) as year_sq
                 JOIN (SELECT party FROM (VALUES
                     ('Democratic'),
                     ('Republican')) AS party_table (party)) as party_sq_party

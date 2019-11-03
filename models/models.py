@@ -69,6 +69,7 @@ class Appointment(Base):
     start_year = Column(Integer, index=True)
     end_date = Column(Date, index=True)
     end_year = Column(Integer, index=True)
+    days_to_confirm = Column(Integer, index=True)
 
     judge = relationship('Judge', back_populates='appointments', uselist=False)
 

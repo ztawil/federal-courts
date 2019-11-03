@@ -22,10 +22,6 @@ with get_session() as session:
         (x[0], x[1]) for x in
         session
         .query(Court.court_type, sql.func.array_agg(Court.court_name))
-        .filter(Court.court_type.notin_([
-            'U.S. Circuit Court (1801-1802)',
-            'U.S. Circuit Court (1869-1911)',
-            'U.S. Circuit Court (other)']))
         .group_by(Court.court_type)
         .order_by(Court.court_type)
     )
@@ -51,7 +47,8 @@ app.layout = html.Div(
         ),
         html.Div(
             id='graphs', children=[
-                dcc.Graph(id='line-graph')
+                dcc.Graph(id='wait-graph'),
+                dcc.Graph(id='line-graph'),
                 ]
             )
         ]
@@ -76,9 +73,50 @@ def update_court_name(court_type_select):
 
 
 @app.callback(
-    Output('line-graph', 'figure'),
+    [Output('line-graph', 'figure'), Output('wait-graph', 'figure')],
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
+def update_graphs(court_type_select, court_name_select):
+    line_fig = update_line_graph(court_type_select, court_name_select)
+    wait_fig = update_wait_graph(court_type_select, court_name_select)
+    return line_fig, wait_fig
+
+
+def update_wait_graph(court_type_select, court_name_select):
+    join_conditions = [
+        # Join condition for if the judge was serving that year
+        sql.and_(
+            sql.func.date_part('year', Appointment.nomination_date) >= YearParty.year,
+            sql.func.date_part('year', Appointment.nomination_date) < YearParty.year + 2,
+        )
+    ]
+
+    if court_type_select:
+        join_conditions.append(Appointment.court_type.in_([court_type_select]))
+
+    if court_name_select:
+        join_conditions.append(Appointment.court_name.in_([court_name_select]))
+
+    wait_time_query = (
+        session
+        .query(
+            YearParty.year,
+            sql.func.array_agg(Appointment.days_to_confirm).label('days_to_confirm')
+        )
+        .outerjoin(
+            Appointment, sql.and_(*join_conditions)
+        )
+        .filter(Appointment.days_to_confirm.isnot(None))
+        .group_by(YearParty.year)
+        .order_by(YearParty.year.asc())
+    )
+
+    fig = go.Figure()
+    for year, wait_times in wait_time_query.all():
+        fig.add_trace(go.Box(y=wait_times, x=[year for _ in wait_times], name=year, marker_color='indianred'))
+    return fig
+
+
 def update_line_graph(court_type_select, court_name_select):
 
     join_conditions = [
@@ -179,6 +217,7 @@ def update_line_graph(court_type_select, court_name_select):
         hovermode='x',
         spikedistance=-1,
     )
+
     return fig
 
 
