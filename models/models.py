@@ -37,12 +37,12 @@ class Appointment(Base):
     __tablename__ = 'appointment'
 
     id = Column(Integer, primary_key=True)
-    nid = Column(Integer, ForeignKey('judge.nid'))
-    court_type = Column(String)
-    court_name = Column(String)
+    nid = Column(Integer, ForeignKey('judge.nid'), index=True)
+    court_type = Column(String, index=True)
+    court_name = Column(String, index=True)
     appointment_title = Column(String)
     appointing_president = Column(String)
-    party_of_appointing_president = Column(String)
+    party_of_appointing_president = Column(String, index=True)
     reappointing_president = Column(String)
     party_of_reappointing_president = Column(String)
     aba_rating = Column(String)
@@ -65,10 +65,10 @@ class Appointment(Base):
     senior_status_date = Column(Date)
     termination = Column(String)
     termination_date = Column(Date)
-    start_date = Column(Date)
-    start_year = Column(Integer)
-    end_date = Column(Date)
-    end_year = Column(Integer)
+    start_date = Column(Date, index=True)
+    start_year = Column(Integer, index=True)
+    end_date = Column(Date, index=True)
+    end_year = Column(Integer, index=True)
 
     judge = relationship('Judge', back_populates='appointments', uselist=False)
 
@@ -78,7 +78,7 @@ class Education(Base):
     __tablename__ = 'education'
 
     id = Column(Integer, primary_key=True)
-    nid = Column(Integer, ForeignKey('judge.nid'))
+    nid = Column(Integer, ForeignKey('judge.nid'), index=True)
     school = Column(String)
     degree = Column(String)
     degree_year = Column(Integer)

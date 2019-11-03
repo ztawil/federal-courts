@@ -3,6 +3,7 @@ import csv
 import os
 from collections import defaultdict
 from datetime import datetime
+from sqlalchemy import sql
 
 import column_name_maps
 from database_utils import get_session, recreate_db
@@ -122,6 +123,43 @@ def _parse_args():
     return parser.parse_args()
 
 
+def insert_court_types(session):
+    select_stmnt = (
+        sql.select([Appointment.court_type, Appointment.court_name])
+        .where(
+            sql.and_(
+                Appointment.start_year >= 1900,
+                Appointment.court_type.notin_(
+                    ['U.S. Circuit Court (1801-1802)', 'U.S. Circuit Court (1869-1911)']
+                )
+            )
+        )
+        .group_by(Appointment.court_type, Appointment.court_name)
+    )
+
+    session.execute(
+        Court.__table__.insert()
+        .from_select([Court.court_type, Court.court_name], select_stmnt)
+    )
+
+
+def insert_year_party(session):
+    """Create a table that is every year, party combination. This is used as the left table for all
+    outer joins because some years only 1 party is represented in a court
+    """
+    year_sq = sql.select([sql.func.generate_series(1900, 2020, 2).label('year')]).alias('year_sq')
+    party_sq = (
+        sql.select([Appointment.party_of_appointing_president.label('party')])
+        .where(Appointment.party_of_appointing_president.in_(['Democratic', 'Republican']))
+        .alias('party_sq')
+    )
+
+    select_stmnt = (
+        sql.select([year_sq.c.year, party_sq.c.party])
+        .join(party_sq, sql.literal(True))  # Use this for cross join
+    )
+
+
 def main():
     args = _parse_args()
     file_name = args.file_name
@@ -130,11 +168,12 @@ def main():
     recreate_db()
     with get_session() as session:
         with open(os.path.join(directory, file_name)) as f:
+            row_objs = []
             for row in csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC):
-                session.add(get_models(row))
+                row_objs.append(get_models(row))
+        session.add_all(row_objs)
 
-        conn = session.connection()
-        conn.execute(
+        session.execute(
             """
             INSERT INTO year_party(year, party) (
                 SELECT year, party
@@ -146,16 +185,8 @@ def main():
             """
         )
 
-        conn.execute(
-            """
-            INSERT INTO court(court_type, court_name) (
-                SELECT court_type, court_name
-                FROM appointment
-                WHERE start_year >= 1900
-                GROUP BY court_type, court_name
-            )
-            """
-        )
+        session.flush()
+        insert_court_types(session)
 
 
 if __name__ == "__main__":
