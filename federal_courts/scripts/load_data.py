@@ -151,6 +151,7 @@ def main():
             INSERT INTO court(court_type, court_name) (
                 SELECT court_type, court_name
                 FROM appointment
+                WHERE start_year >= 1900
                 GROUP BY court_type, court_name
             )
             """
