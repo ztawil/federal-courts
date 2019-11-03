@@ -186,7 +186,7 @@ def main():
             """
             INSERT INTO year_party(year, party) (
                 SELECT year, party
-                FROM (SELECT generate_series(1901, 2021, 2) AS year) as year_sq
+                FROM (SELECT generate_series(1901, 2019, 2) AS year) as year_sq
                 JOIN (SELECT party FROM (VALUES
                     ('Democratic'),
                     ('Republican')) AS party_table (party)) as party_sq_party

@@ -125,15 +125,19 @@ def update_graphs(court_type_select, court_name_select):
     y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
     fig.update_layout(
         width=1600, height=800,
+        xaxis1={
+            'showticklabels': True,
+        },
         xaxis2={
-            'title': 'Year',
-            'range': [start_year, end_year + 2],
+            'range': [min(years) - 1, max(years) + 1],
+            'showticklabels': True,
             'spikemode': 'across',
             'spikesnap': 'cursor',
             'spikecolor': 'black',
             'spikethickness': 1,
+            'rangeslider': {'visible': True},
         },
-        yaxis1={'title': 'Wait Times'},
+        yaxis1={'title': 'Wait Times (days)'},
         yaxis2={'title': 'Number of Judges', 'range': y_range},
         yaxis3={
             'title': '\u0394 Number of Judges',
@@ -141,7 +145,6 @@ def update_graphs(court_type_select, court_name_select):
             'tickvals': [],  # don't want to show ticks
             'tickmode': 'array',
         },
-
         barmode='relative',
         hovermode='x',
         spikedistance=-1,
