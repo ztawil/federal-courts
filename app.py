@@ -14,7 +14,7 @@ from database_utils import get_session
 from models.models import Appointment, Court, YearParty
 
 
-start_year, end_year = 1900, 2020
+start_year, end_year = 1901, 2021
 party_colors = {'Democratic': '#3440eb', 'Republican': '#cc0808'}
 
 with get_session() as session:
@@ -46,9 +46,10 @@ app.layout = html.Div(
             ]
         ),
         html.Div(
-            id='graphs', children=[
-                dcc.Graph(id='wait-graph'),
-                dcc.Graph(id='line-graph'),
+            id='graphs-holder', children=[
+                # dcc.Graph(id='wait-graph'),
+                # dcc.Graph(id='line-graph'),
+                dcc.Graph(id='graphs'),
                 ]
             )
         ]
@@ -73,16 +74,82 @@ def update_court_name(court_type_select):
 
 
 @app.callback(
-    [Output('line-graph', 'figure'), Output('wait-graph', 'figure')],
+    # [Output('line-graph', 'figure'), Output('wait-graph', 'figure')],
+    Output('graphs', 'figure'),
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
 def update_graphs(court_type_select, court_name_select):
-    line_fig = update_line_graph(court_type_select, court_name_select)
-    wait_fig = update_wait_graph(court_type_select, court_name_select)
-    return line_fig, wait_fig
+    years, y_cum_values, y_delta_values, ymin, ymax = \
+        get_line_graph_data(court_type_select, court_name_select)
+
+    wait_time_query = get_wait_time_query(court_type_select, court_name_select)
+
+    fig = make_subplots(
+        rows=2, cols=1, shared_xaxes=True,
+        vertical_spacing=0.05,
+        specs=[[{}], [{"secondary_y": True}]])
+
+    for year, wait_times in wait_time_query.all():
+        fig.add_trace(
+            go.Box(
+                y=wait_times,
+                name=year,
+                marker_color='indianred',
+                showlegend=False,
+            ),
+            row=1, col=1)
+
+    for party, y_c_values in y_cum_values.items():
+        color = party_colors.get(party)
+        fig.add_trace(
+            go.Scatter(
+                x=years,
+                y=y_c_values,
+                marker={'size': 10, 'opacity': 1, 'color': color},
+                text=party, name=party, hoverinfo='y'),
+            secondary_y=False,
+            row=2, col=1,
+        )
+        fig.add_trace(
+            go.Bar(
+                name=party,
+                x=years[1:],
+                y=y_delta_values[party][1:],
+                marker_color=color, showlegend=False,
+                # hoverinfo='y',
+                ),
+            secondary_y=True,
+            row=2, col=1,
+        )
+
+    y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
+    fig.update_layout(
+        width=1600, height=800,
+        xaxis2={
+            'title': 'Year',
+            'range': [start_year, end_year + 2],
+            'spikemode': 'across',
+            'spikesnap': 'cursor',
+            'spikecolor': 'black',
+            'spikethickness': 1,
+        },
+        yaxis1={'title': 'Wait Times'},
+        yaxis2={'title': 'Number of Judges', 'range': y_range},
+        yaxis3={
+            'title': '\u0394 Number of Judges',
+            'range': y_range,
+            'tickvals': [],  # don't want to show ticks
+            'tickmode': 'array',
+        },
+
+        barmode='relative',
+        hovermode='x',
+        spikedistance=-1,
+    )
+    return fig
 
 
-def update_wait_graph(court_type_select, court_name_select):
+def get_wait_time_query(court_type_select, court_name_select):
     join_conditions = [
         # Join condition for if the judge was serving that year
         sql.and_(
@@ -110,14 +177,10 @@ def update_wait_graph(court_type_select, court_name_select):
         .group_by(YearParty.year)
         .order_by(YearParty.year.asc())
     )
-
-    fig = go.Figure()
-    for year, wait_times in wait_time_query.all():
-        fig.add_trace(go.Box(y=wait_times, x=[year for _ in wait_times], name=year, marker_color='indianred'))
-    return fig
+    return wait_time_query
 
 
-def update_line_graph(court_type_select, court_name_select):
+def get_line_graph_data(court_type_select, court_name_select):
 
     join_conditions = [
         # Join condition for if the judge was serving that year
@@ -172,53 +235,7 @@ def update_line_graph(court_type_select, court_name_select):
 
     # sort
     years = sorted(years)
-
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    for party, y_cum_values in y_cum_values.items():
-        color = party_colors.get(party)
-        fig.add_trace(
-            go.Scatter(
-                x=years,
-                y=y_cum_values,
-                marker={'size': 10, 'opacity': 1, 'color': color},
-                text=party, name=party, hoverinfo='y'),
-            secondary_y=False,
-        )
-        fig.add_trace(
-            go.Bar(
-                name=party,
-                x=years[1:],
-                y=y_delta_values[party][1:],
-                marker_color=color, showlegend=False,
-                # hoverinfo='y',
-                ), secondary_y=True,
-        )
-
-    y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
-    fig.update_layout(
-        xaxis={
-            'title': 'Year',
-            'range': [start_year, end_year + 2],
-            'spikemode': 'across',
-            'spikesnap': 'cursor',
-            'spikecolor': 'black',
-            'spikethickness': 1,
-        },
-        yaxis={'title': 'Number of Judges', 'range': y_range},
-        yaxis2={
-            'title': '\u0394 Number of Judges',
-            'range': y_range,
-            'tickvals': [],  # don't want to show ticks
-            'tickmode': 'array',
-        },
-
-        barmode='relative',
-        hovermode='x',
-        spikedistance=-1,
-    )
-
-    return fig
+    return years, y_cum_values, y_delta_values, ymin, ymax
 
 
 if __name__ == '__main__':
