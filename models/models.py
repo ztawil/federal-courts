@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, ForeignKey, Integer, String
+from sqlalchemy import Column, Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import generic_repr
 
@@ -101,3 +101,28 @@ class Court(Base):
 
     court_type = Column(String, primary_key=True)
     court_name = Column(String, primary_key=True)
+
+
+@generic_repr
+class Congress(Base):
+    __tablename__ = 'congress'
+
+    title = Column(String, primary_key=True, nullable=False)
+    time_span = Column(String, nullable=False)
+    start_year = Column(Integer, nullable=False)
+    end_year = Column(Integer, nullable=False)
+    total_senators = Column(Integer, nullable=False)
+    senate_democrats = Column(Integer, nullable=False)
+    senate_republicans = Column(Integer, nullable=False)
+    total_house = Column(Integer, nullable=False)
+    house_democrats = Column(Integer, nullable=False)
+    house_republicans = Column(Integer, nullable=False)
+    president = Column(String, nullable=False)
+    party_of_president = Column(String, nullable=False)
+    senate_independents = Column(Integer, nullable=False)
+    house_independents = Column(Integer, nullable=False)
+    senate_dem_caucus = Column(Integer, nullable=False)
+    senate_rep_caucus = Column(Integer, nullable=False)
+    senate_majority_party = Column(String, nullable=False)
+    president_party_senate_majority = Column(Integer, nullable=False)
+    president_party_senate_majority_perc = Column(Float, nullable=False)

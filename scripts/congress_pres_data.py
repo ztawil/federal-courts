@@ -1,5 +1,7 @@
-from bs4 import BeautifulSoup
 import requests
+from csv import DictWriter
+
+from bs4 import BeautifulSoup
 
 
 # character for '-'
@@ -26,12 +28,11 @@ def main():
 
     data = []
     party_colors = {
-        '#FFB6B6': 'republican',
-        '#B0CEFF': 'democratic',
+        '#FFB6B6': 'Republican',
+        '#B0CEFF': 'Democratic',
     }
 
     for row in all_rows[start_idx: start_idx + end_idx]:
-        print(row.find_all('td')[1].text.strip())
         columns = row.find_all('td')
 
         if len(columns) == 13:
@@ -39,9 +40,14 @@ def main():
             president = clean_col(col)
             party_president = party_colors[get_color(col)]
 
+        time_span = clean_col(columns[1])
+        start_year, end_year = [int(x) for x in time_span.split(WIKI_DASH)]
+
         row_dict = {
             'title': clean_col(columns[0]),
-            'time_span': clean_col(columns[1]),
+            'time_span': time_span,
+            'start_year': start_year,
+            'end_year': end_year,
             'total_senators': mk_int(clean_col(columns[2])),
             'senate_democrats': mk_int(clean_col(columns[3])),
             'senate_republicans': mk_int(clean_col(columns[4])),
@@ -64,17 +70,40 @@ def main():
 
         senate_independents_color = get_color(columns[5])
         if senate_independents_color:
-            if party_colors[senate_independents_color] == 'democratic':
+            if party_colors[senate_independents_color] == 'Democratic':
                 row_dict['senate_dem_caucus'] = row_dict['senate_democrats'] + senate_independents
                 row_dict['senate_rep_caucus'] = row_dict['senate_republicans']
-            elif party_colors[senate_independents_color] == 'republican':
+            elif party_colors[senate_independents_color] == 'Republican':
                 row_dict['senate_dem_caucus'] = row_dict['senate_democrats']
                 row_dict['senate_rep_caucus'] = row_dict['senate_republicans'] + senate_independents
         else:
             row_dict['senate_dem_caucus'] = row_dict['senate_democrats']
             row_dict['senate_rep_caucus'] = row_dict['senate_republicans']
 
+        if row_dict['senate_rep_caucus'] > row_dict['senate_dem_caucus']:
+            row_dict['senate_majority_party'] = 'Republican'
+        elif row_dict['senate_rep_caucus'] < row_dict['senate_dem_caucus']:
+            row_dict['senate_majority_party'] = 'Democratic'
+        elif row_dict['senate_rep_caucus'] == row_dict['senate_dem_caucus']:
+            row_dict['senate_majority_party'] = row_dict['party_of_president']
+
+        if row_dict['party_of_president'] == 'Republican':
+            row_dict['president_party_senate_majority'] = \
+                row_dict['senate_rep_caucus'] - row_dict['senate_dem_caucus']
+        else:
+            row_dict['president_party_senate_majority'] = \
+                row_dict['senate_dem_caucus'] - row_dict['senate_rep_caucus']
+
+        row_dict['president_party_senate_majority_perc'] = \
+            row_dict['president_party_senate_majority'] / row_dict['total_senators']
+
         data.append(row_dict)
+
+    with open('./data/congress_data.csv', 'w') as f:
+        writer = DictWriter(f, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+
     return data
 
 

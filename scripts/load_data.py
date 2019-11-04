@@ -7,7 +7,8 @@ from sqlalchemy import sql
 
 import column_name_maps
 from database_utils import get_session, recreate_db
-from models.models import Appointment, Court, Education, Judge
+from models import Appointment, Congress, Court, Education, Judge
+from scripts.congress_pres_data import main as get_congress_pres_data
 
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -169,6 +170,13 @@ def insert_year_party(session):
     )
 
 
+def insert_congress(session):
+    with open('./data/congress_data.csv') as f:
+        reader = csv.DictReader(f)
+        all_row_objs = [Congress(**row) for row in reader]
+        session.add_all(all_row_objs)
+
+
 def main():
     args = _parse_args()
     file_name = args.file_name
@@ -196,6 +204,8 @@ def main():
 
         session.flush()
         insert_court_types(session)
+
+        insert_congress(session)
 
 
 if __name__ == "__main__":
