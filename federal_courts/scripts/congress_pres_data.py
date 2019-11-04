@@ -2,6 +2,10 @@ from bs4 import BeautifulSoup
 import requests
 
 
+# character for '-'
+WIKI_DASH = chr(8211)
+
+
 def main():
     html_code = requests.get(
         'https://en.wikipedia.org/wiki/Party_divisions_of_United_States_Congresses').text
@@ -10,13 +14,13 @@ def main():
 
     all_rows = table.find_all('tr')
     for i, row in enumerate(all_rows):
-        if row.find_all('td') and row.find_all('td')[1].text.strip().split(chr(8211))[0] == '1901':
+        if row.find_all('td') and row.find_all('td')[1].text.strip().split(WIKI_DASH)[0] == '1901':
             break
     start_idx = i
 
     all_rows = table.find_all('tr')
     for i, row in enumerate(all_rows[start_idx:]):
-        if row.find_all('td') and row.find_all('td')[1].text.strip().split(chr(8211))[0] == '2019':
+        if row.find_all('td') and row.find_all('td')[1].text.strip().split(WIKI_DASH)[0] == '2019':
             break
     end_idx = i + 1
 
@@ -49,6 +53,15 @@ def main():
         }
 
         senate_independents = mk_int(clean_col(columns[5]))
+        row_dict['senate_independents'] = senate_independents
+        house_independents = mk_int(clean_col(columns[10]))
+        row_dict['house_independents'] = house_independents
+
+        row_dict = hand_fill(row_dict)
+
+        # re-assign after hand filling
+        senate_independents = row_dict['senate_independents']
+
         senate_independents_color = get_color(columns[5])
         if senate_independents_color:
             if party_colors[senate_independents_color] == 'democratic':
@@ -61,11 +74,8 @@ def main():
             row_dict['senate_dem_caucus'] = row_dict['senate_democrats']
             row_dict['senate_rep_caucus'] = row_dict['senate_republicans']
 
-        row_dict['senate_indenpendents'] = senate_independents
-
-        house_independents = mk_int(clean_col(columns[10]))
-        row_dict['house_independents'] = house_independents
         data.append(row_dict)
+    return data
 
 
 def clean_col(col):
@@ -84,3 +94,34 @@ def get_color(col):
         return col.attrs['style'].split(':')[1]
     else:
         return None
+
+
+def hand_fill(row_dict):
+    """Updates the data from wikipedia when there is a split in the number of senators in the term.
+    Chosen values are based on reading the citations and choosing the most appropriate (i.e. value)
+    that is most representative of the Congression term.
+    """
+
+    data_map = {
+        '115th': {
+             'senate_democrats': 47,
+             'senate_republicans': 51,
+        },
+        '111th': {
+             'senate_democrats': 57,
+             'senate_republicans': 41,
+        },
+        '107th': {
+             'senate_republicans': 49,
+             'senate_independents': 1,
+        },
+    }
+    if row_dict['title'] in data_map:
+        row_title = row_dict['title']
+        data_dict = [data_dict for title, data_dict in data_map.items() if title == row_title][0]
+        row_dict.update(data_dict)
+    return row_dict
+
+
+if __name__ == "__main__":
+    data = main()
