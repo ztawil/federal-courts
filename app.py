@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 from sqlalchemy import sql
 
 from database_utils import get_session
-from models.models import Appointment, Court, YearParty
+from models import Appointment, Congress, Court, YearParty
 
 
 start_year, end_year = 1901, 2021
@@ -47,8 +47,6 @@ app.layout = html.Div(
         ),
         html.Div(
             id='graphs-holder', children=[
-                # dcc.Graph(id='wait-graph'),
-                # dcc.Graph(id='line-graph'),
                 dcc.Graph(id='graphs'),
                 ]
             )
@@ -74,7 +72,6 @@ def update_court_name(court_type_select):
 
 
 @app.callback(
-    # [Output('line-graph', 'figure'), Output('wait-graph', 'figure')],
     Output('graphs', 'figure'),
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
