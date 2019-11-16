@@ -86,12 +86,14 @@ def update_graphs(court_type_select, court_name_select):
         vertical_spacing=0.05,
         specs=[[{}], [{"secondary_y": True}]])
 
-    for year, wait_times in wait_time_query.all():
+    for year, president, party, wait_times in wait_time_query.all():
         fig.add_trace(
             go.Box(
                 y=wait_times,
-                name=year,
-                marker_color='indianred',
+                x=[year for _ in wait_times],
+                name=president,
+                hoverinfo='name',
+                marker_color=party_colors.get(party),
                 showlegend=False,
             ),
             row=1, col=1)
@@ -153,8 +155,8 @@ def get_wait_time_query(court_type_select, court_name_select):
     join_conditions = [
         # Join condition for if the judge was serving that year
         sql.and_(
-            sql.func.date_part('year', Appointment.nomination_date) >= YearParty.year,
-            sql.func.date_part('year', Appointment.nomination_date) < YearParty.year + 2,
+            sql.func.date_part('year', Appointment.nomination_date) >= Congress.start_year,
+            sql.func.date_part('year', Appointment.nomination_date) < Congress.end_year,
         )
     ]
 
@@ -167,15 +169,17 @@ def get_wait_time_query(court_type_select, court_name_select):
     wait_time_query = (
         session
         .query(
-            YearParty.year,
+            Congress.start_year,
+            Congress.president,
+            Congress.party_of_president.label('party'),
             sql.func.array_agg(Appointment.days_to_confirm).label('days_to_confirm')
         )
-        .outerjoin(
+        .join(
             Appointment, sql.and_(*join_conditions)
         )
         .filter(Appointment.days_to_confirm.isnot(None))
-        .group_by(YearParty.year)
-        .order_by(YearParty.year.asc())
+        .group_by(Congress.start_year, Congress.president, Congress.party_of_president)
+        .order_by(Congress.start_year)
     )
     return wait_time_query
 
