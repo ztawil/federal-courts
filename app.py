@@ -36,18 +36,25 @@ app.layout = html.Div(
         html.Div(
             id='filters',
             children=[
-                dcc.Dropdown(
-                    id='court-type-dd',
-                    options=[{'label': ct, 'value': ct} for ct in court_type_name.keys()]
+                html.Div(
+                    dcc.Dropdown(
+                        id='court-type-dd',
+                        options=[{'label': ct, 'value': ct} for ct in court_type_name.keys()]
+                    ),
+                    style={'width': '49%', 'display': 'inline-block'}
                 ),
-                dcc.Dropdown(
-                    id='court-name-dd',
+                html.Div(
+                    dcc.Dropdown(
+                        id='court-name-dd',
+                    ),
+                    style={'width': '49%', 'display': 'inline-block'}
                 )
-            ]
+            ],
+            
         ),
         html.Div(
             id='graphs-holder', children=[
-                dcc.Graph(id='graphs'),
+                dcc.Graph(id='line-graph'),
                 ]
             )
         ]
@@ -72,30 +79,13 @@ def update_court_name(court_type_select):
 
 
 @app.callback(
-    Output('graphs', 'figure'),
+    Output('line-graph', 'figure'),
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
 def update_graphs(court_type_select, court_name_select):
     party_counts_dict, years = get_line_graph_data(court_type_select, court_name_select)
 
-    wait_time_query = get_wait_time_query(court_type_select, court_name_select)
-
-    fig = make_subplots(
-        rows=2, cols=1, shared_xaxes=True,
-        vertical_spacing=0.05,
-        specs=[[{}], [{"secondary_y": True}]])
-
-    for year, president, party, wait_times in wait_time_query.all():
-        fig.add_trace(
-            go.Box(
-                y=wait_times,
-                x=[year for _ in wait_times],
-                name=president,
-                # hoverinfo='name',
-                marker_color=party_colors.get(party),
-                showlegend=False,
-            ),
-            row=1, col=1)
+    fig = go.Figure()
 
     for party, counts_dict in party_counts_dict.items():
         color = party_colors.get(party)
@@ -106,33 +96,27 @@ def update_graphs(court_type_select, court_name_select):
                 marker={'opacity': 1, 'color': color},
                 text=party,
                 name=party,
-                mode='markers',
+                # mode='markers',
                 error_y=dict(
                     type='data',
+                    thickness=0.5,
                     symmetric=False,
                     array=counts_dict['n_appointed'],
                     arrayminus=counts_dict['n_terminated'])
                 ),
-            row=2, col=1,
         )
 
-    # y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
     fig.update_layout(
         width=1600, height=800,
-        xaxis1={
-            'showticklabels': True,
-        },
-        xaxis2={
-            # 'range': [min(years) - 1, max(years) + 1],
+        xaxis={
+            'range': [min(years) - 2, max(years) + 2],
             'showticklabels': True,
             'spikemode': 'across',
             'spikesnap': 'cursor',
             'spikecolor': 'black',
             'spikethickness': 1,
-            'rangeslider': {'visible': True},
         },
-        yaxis1={'title': 'Wait Times (days)'},
-        yaxis2={'title': 'Number of Judges', 'range': [-100, 500]},
+        yaxis={'title': 'Number of Judges'},
         hovermode='x',
         spikedistance=-1,
     )
