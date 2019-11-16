@@ -76,8 +76,7 @@ def update_court_name(court_type_select):
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
 def update_graphs(court_type_select, court_name_select):
-    years, y_cum_values, y_delta_values, ymin, ymax = \
-        get_line_graph_data(court_type_select, court_name_select)
+    party_counts_dict, years = get_line_graph_data(court_type_select, court_name_select)
 
     wait_time_query = get_wait_time_query(court_type_select, court_name_select)
 
@@ -92,43 +91,39 @@ def update_graphs(court_type_select, court_name_select):
                 y=wait_times,
                 x=[year for _ in wait_times],
                 name=president,
-                hoverinfo='name',
+                # hoverinfo='name',
                 marker_color=party_colors.get(party),
                 showlegend=False,
             ),
             row=1, col=1)
 
-    for party, y_c_values in y_cum_values.items():
+    for party, counts_dict in party_counts_dict.items():
         color = party_colors.get(party)
         fig.add_trace(
             go.Scatter(
                 x=years,
-                y=y_c_values,
-                marker={'size': 10, 'opacity': 1, 'color': color},
-                text=party, name=party, hoverinfo='y'),
-            secondary_y=False,
-            row=2, col=1,
-        )
-        fig.add_trace(
-            go.Bar(
+                y=counts_dict['n_judges'],
+                marker={'opacity': 1, 'color': color},
+                text=party,
                 name=party,
-                x=years[1:],
-                y=y_delta_values[party][1:],
-                marker_color=color, showlegend=False,
-                # hoverinfo='y',
+                mode='markers',
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=counts_dict['n_appointed'],
+                    arrayminus=counts_dict['n_terminated'])
                 ),
-            secondary_y=True,
             row=2, col=1,
         )
 
-    y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
+    # y_range = [math.floor(ymin * 1.5), math.ceil(ymax * 1.2)]
     fig.update_layout(
         width=1600, height=800,
         xaxis1={
             'showticklabels': True,
         },
         xaxis2={
-            'range': [min(years) - 1, max(years) + 1],
+            # 'range': [min(years) - 1, max(years) + 1],
             'showticklabels': True,
             'spikemode': 'across',
             'spikesnap': 'cursor',
@@ -137,14 +132,7 @@ def update_graphs(court_type_select, court_name_select):
             'rangeslider': {'visible': True},
         },
         yaxis1={'title': 'Wait Times (days)'},
-        yaxis2={'title': 'Number of Judges', 'range': y_range},
-        yaxis3={
-            'title': '\u0394 Number of Judges',
-            'range': y_range,
-            'tickvals': [],  # don't want to show ticks
-            'tickmode': 'array',
-        },
-        barmode='relative',
+        yaxis2={'title': 'Number of Judges', 'range': [-100, 500]},
         hovermode='x',
         spikedistance=-1,
     )
@@ -185,13 +173,59 @@ def get_wait_time_query(court_type_select, court_name_select):
 
 
 def get_line_graph_data(court_type_select, court_name_select):
+    start_query = (
+        get_start_count_query(court_type_select, court_name_select)
+        .subquery('start_query')
+    )
+    end_query = get_end_count_query(court_type_select, court_name_select).subquery('end_query')
+    count_query = (
+        get_judge_count_query(court_type_select, court_name_select)
+        .subquery('count_query')
+    )
 
+    full_query = (
+        session
+        .query(
+            count_query.c.year,
+            count_query.c.party,
+            count_query.c.count.label('n_judges'),
+            start_query.c.count.label('n_appointed'),
+            end_query.c.count.label('n_terminated'),
+        )
+        .join(
+            start_query,
+            sql.and_(
+                start_query.c.year == count_query.c.year,
+                start_query.c.party == count_query.c.party,
+            )
+        )
+        .join(
+            end_query,
+            sql.and_(
+                end_query.c.year == count_query.c.year,
+                end_query.c.party == count_query.c.party,
+            )
+        )
+        .order_by(count_query.c.year)
+    )
+
+    party_counts_dict = defaultdict(lambda: defaultdict(list))
+    years = set()  # set because of dups
+    for row in full_query:
+        years.add(row.year)
+        party_counts_dict[row.party]['n_judges'].append(row.n_judges) 
+        party_counts_dict[row.party]['n_appointed'].append(row.n_appointed) 
+        party_counts_dict[row.party]['n_terminated'].append(row.n_terminated) 
+    return party_counts_dict, sorted(years)
+
+
+def get_judge_count_query(court_type_select=None, court_name_select=None):
     join_conditions = [
         # Join condition for if the judge was serving that year
         sql.and_(
-            Appointment.start_year <= YearParty.year,
+            Appointment.start_year < YearParty.year + 2,
             sql.or_(
-                Appointment.end_year > YearParty.year, Appointment.end_year.is_(None)
+                Appointment.end_year >= YearParty.year, Appointment.end_year.is_(None)
             )
         ),
         # Join condition for party
@@ -204,43 +238,84 @@ def get_line_graph_data(court_type_select, court_name_select):
     if court_name_select:
         join_conditions.append(Appointment.court_name.in_([court_name_select]))
 
-    with get_session() as session:
-        counts_query = (
-            session
-            .query(
-                YearParty.year,
-                YearParty.party,
-                sql.func.count(Appointment.start_year).label('count')
-            )
-            .outerjoin(
-                Appointment, sql.and_(*join_conditions)
-            )
-            .group_by(YearParty.year, YearParty.party)
-            .order_by(YearParty.year.asc())
+    return (
+        session
+        .query(
+            YearParty.year,
+            YearParty.party,
+            sql.func.count(Appointment.start_year).label('count'),
         )
+        .outerjoin(
+            Appointment,
+            sql.and_(*join_conditions)
+        )
+        .group_by(YearParty.year, YearParty.party)
+        .order_by(YearParty.year)
+    )
 
-        y_cum_values = defaultdict(list)
-        y_delta_values = defaultdict(list)
-        # Make a set because of dups
-        years = set()
-        ymin = 0
-        ymax = 0
-        for row in counts_query:
-            years.add(row.year)
-            this_year_cum = row.count
-            y_delta = 0
-            party = row.party
-            if len(y_delta_values[party]) > 0:
-                y_delta = this_year_cum - y_cum_values[party][-1]  # last year value
-            ymax = max(ymax, this_year_cum)
-            ymin = min(ymin, y_delta)
-            y_delta_values[party].append(y_delta)
-            y_cum_values[party].append(this_year_cum)
 
-    # sort
-    years = sorted(years)
-    return years, y_cum_values, y_delta_values, ymin, ymax
+def get_start_count_query(court_type_select=None, court_name_select=None):
+    join_conditions = [
+        # Need to have started / left in that congress or after
+        Appointment.start_year >= YearParty.year,
+        # Need to have started /  before the start of the next congress
+        Appointment.start_year < YearParty.year + 2,
+        # Join condition for party
+        YearParty.party == Appointment.party_of_appointing_president,
+    ]
 
+    if court_type_select:
+        join_conditions.append(Appointment.court_type.in_([court_type_select]))
+
+    if court_name_select:
+        join_conditions.append(Appointment.court_name.in_([court_name_select]))
+
+    return (
+        session
+        .query(
+            YearParty.year,
+            YearParty.party,
+            sql.func.count(Appointment.start_year).label('count'),
+        )
+        .outerjoin(
+            Appointment,
+            sql.and_(*join_conditions)
+        )
+        .group_by(YearParty.year, YearParty.party)
+        .order_by(YearParty.year)
+    )
+
+
+def get_end_count_query(court_type_select=None, court_name_select=None):
+    join_conditions = [
+        # Need to have started / left in that congress or after
+        Appointment.end_year >= YearParty.year - 2,
+        # Need to have started /  before the start of the next congress
+        Appointment.end_year < YearParty.year,
+        # Join condition for party
+        YearParty.party == Appointment.party_of_appointing_president,
+    ]
+
+    if court_type_select:
+        join_conditions.append(Appointment.court_type.in_([court_type_select]))
+
+    if court_name_select:
+        join_conditions.append(Appointment.court_name.in_([court_name_select]))
+
+    return (
+        session
+        .query(
+            YearParty.year,
+            YearParty.party,
+            sql.func.count(Appointment.start_year).label('count'),
+        )
+        .outerjoin(
+            Appointment,
+            sql.and_(*join_conditions)
+        )
+        .group_by(YearParty.year, YearParty.party)
+        .order_by(YearParty.year)
+    )
 
 if __name__ == '__main__':
     app.run_server(debug=True)
