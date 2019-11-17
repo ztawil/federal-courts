@@ -45,19 +45,37 @@ app.layout = html.Div(
                     ),
                     style={'width': '49%', 'display': 'inline-block'}
                 ),
-                dcc.Tabs(id='tabs', children=[
+                dcc.Tabs(id='main-tabs', style={'width': '49%'}, children=[
                     dcc.Tab(id='makeup-tab', label='Makeup', children=[
-                        dcc.Graph(
-                            id='line-graph',
-                            config={'displayModeBar': False},
-                            style={'width': '100%'}
-                            ),
+                        dcc.Tabs(id='makeup-subtabs', children=[
+                            dcc.Tab(id='party-counts-tab', label='Party', children=[
+                                dcc.Graph(
+                                    id='party-counts-graph',
+                                    config={'displayModeBar': False},
+                                    style={'width': '100%'}
+                                    ),
+                                ]),
+                            dcc.Tab(id='race-ethnicity-tab', label='Race / Ethnicity', children=[
+                                dcc.Graph(
+                                    id='race-ethnicity-graph',
+                                    config={'displayModeBar': False},
+                                    style={'width': '100%'}
+                                    ),
+                                ]),
+                            ])
                         ]
                     ),
                     dcc.Tab(id='process-tab', label='Process', children=[
-                        dcc.Graph(id='wait-time-graph', config={'displayModeBar': False}),
+                        dcc.Tabs(id='process-subtabs', children=[
+                            dcc.Tab(id='wait-time-tab', label='Time to Confirmation', children=[
+                                dcc.Graph(id='wait-time-graph', config={'displayModeBar': False}),
+                                ]),
+                            dcc.Tab(id='unconfirmed-tab', label='Unconfirmed', children=[
+                                dcc.Graph(id='unconfirme-graph', config={'displayModeBar': False}),
+                                ])
+                            ])
                         ]
-                    )
+                    ),
                 ])
             ],
         ),
@@ -83,7 +101,7 @@ def update_court_name(court_type_select):
 
 
 @app.callback(
-    [Output('line-graph', 'figure'), Output('wait-time-graph', 'figure')],
+    [Output('party-counts-graph', 'figure'), Output('wait-time-graph', 'figure')],
     [Input('court-type-dd', 'value'), Input('court-name-dd', 'value')]
 )
 def update_graphs(court_type_select, court_name_select):
@@ -94,4 +112,4 @@ def update_graphs(court_type_select, court_name_select):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False, port=8000, host='0.0.0.0')
+    app.run_server(debug=True, port=8000, host='0.0.0.0')
