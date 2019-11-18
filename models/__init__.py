@@ -4,7 +4,8 @@ from .models import (
     Court,
     Education,
     Judge,
-    YearParty
+    UnsuccessfulNomination,
+    YearParty,
 )
 
 __all__ = (
@@ -13,5 +14,6 @@ __all__ = (
     "Court",
     "Education",
     "Judge",
+    "UnsuccessfulNomination",
     "YearParty"
 )

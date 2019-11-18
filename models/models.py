@@ -126,3 +126,14 @@ class Congress(Base):
     senate_majority_party = Column(String, nullable=False)
     president_party_senate_majority = Column(Integer, nullable=False)
     president_party_senate_majority_perc = Column(Float, nullable=False)
+
+@generic_repr
+class UnsuccessfulNomination(Base):
+    __tablename__ = 'unsuccessful_nomination'
+
+    president = Column(String, nullable=False, primary_key=True)
+    congress = Column(String, nullable=False, primary_key=True)
+    nominee = Column(String, nullable=False, primary_key=True)
+    court_name = Column(String, nullable=False, primary_key=True)
+    nomination_date = Column(String, nullable=False, primary_key=True)
+    outcome = Column(String, nullable=False, primary_key=True)

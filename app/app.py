@@ -37,14 +37,29 @@ app.layout = html.Div(
                         id='court-type-dd',
                         options=[{'label': ct, 'value': ct} for ct in court_type_name.keys()]
                     ),
-                    style={'width': '49%', 'display': 'inline-block'}
+                    style={'width': '33%', 'display': 'inline-block'}
                 ),
                 html.Div(
                     dcc.Dropdown(
                         id='court-name-dd',
                     ),
-                    style={'width': '49%', 'display': 'inline-block'}
+                    style={'width': '33%', 'display': 'inline-block'}
                 ),
+                html.Div(
+                    dcc.Dropdown(
+                        id='senate-party-dd',
+                        options=[
+                            {'label': 'Republican', 'value': 'Republican'},
+                            {'label': 'Democratic', 'value': 'Democratic'},
+                            ]
+                    ),
+                    style={'width': '33%', 'display': 'inline-block'}
+                ),
+            ]
+        ),
+        html.Div(
+            id='graphs',
+            children=[
                 dcc.Tabs(id='main-tabs', style={'width': '49%'}, children=[
                     dcc.Tab(id='makeup-tab', label='Makeup', children=[
                         dcc.Tabs(id='makeup-subtabs', children=[

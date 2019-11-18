@@ -7,7 +7,7 @@ from sqlalchemy import sql
 
 import column_name_maps
 from database_utils import get_session, recreate_db
-from models import Appointment, Congress, Court, Education, Judge
+from models import Appointment, Congress, Court, Education, Judge, UnsuccessfulNomination
 from scripts.congress_pres_data import main as get_congress_pres_data
 
 
@@ -177,6 +177,14 @@ def insert_congress(session):
         session.add_all(all_row_objs)
 
 
+def insert_unsuccessful(session):
+    with open('./data/unsuccessful_nominations.csv') as f:
+        reader = csv.DictReader(f)
+        session.add_all([
+            UnsuccessfulNomination(**row) for row in reader
+        ])
+
+
 def main():
     args = _parse_args()
     file_name = args.file_name
@@ -206,6 +214,7 @@ def main():
         insert_court_types(session)
 
         insert_congress(session)
+        insert_unsuccessful(session)
 
 
 if __name__ == "__main__":
