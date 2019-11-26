@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import generic_repr
 
@@ -132,8 +132,11 @@ class UnsuccessfulNomination(Base):
     __tablename__ = 'unsuccessful_nomination'
 
     president = Column(String, nullable=False, primary_key=True)
-    congress = Column(String, nullable=False, primary_key=True)
+    congress = Column(String, primary_key=True, nullable=False)
+    congress_start_year = Column(Integer, nullable=False)
+    congress_end_year = Column(Integer, nullable=True)
     nominee = Column(String, nullable=False, primary_key=True)
     court_name = Column(String, nullable=False, primary_key=True)
-    nomination_date = Column(String, nullable=False, primary_key=True)
+    nomination_date = Column(Date, nullable=False, primary_key=True)
+    recess_appointment = Column(Boolean, nullable=False, primary_key=True)
     outcome = Column(String, nullable=False, primary_key=True)

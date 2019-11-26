@@ -179,10 +179,15 @@ def insert_congress(session):
 
 def insert_unsuccessful(session):
     with open('./data/unsuccessful_nominations.csv') as f:
+        def _parse_clean_data(row):
+            row['recess_appointment'] = True if row['recess_appointment'] == 'True' else False
+            # Convert '' into None
+            if not row['congress_end_year']:
+                row['congress_end_year'] = None
+            return row
         reader = csv.DictReader(f)
-        session.add_all([
-            UnsuccessfulNomination(**row) for row in reader
-        ])
+        rows = [_parse_clean_data(row) for row in reader]
+        session.add_all([UnsuccessfulNomination(**row) for row in rows])
 
 
 def main():
