@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import re
 from collections import defaultdict
 from datetime import datetime
 from sqlalchemy import sql
@@ -170,6 +171,10 @@ def insert_unsuccessful(session):
             # Convert '' into None
             if not row['congress_end_year']:
                 row['congress_end_year'] = None
+            # This data represented president names as XXXXX XXXX (STARTYEAR - ENDYEAR)
+            # Strip of everything starting at ` (`
+            regex_match = re.compile(r'(\w.*)\W\(')
+            row['president'] = re.findall(regex_match, row['president'])[0]
             return row
         reader = csv.DictReader(f)
         rows = [_parse_clean_data(row) for row in reader]
