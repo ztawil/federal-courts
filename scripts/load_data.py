@@ -23,7 +23,7 @@ def get_models(row):
         for col, slug_col in column_name_maps.demographic_col_map.items()
     })
 
-    # A judge can have multiple appointments. There are a lot of columns associated with an apptmnet
+    # A judge can have multiple appointments. There are a lot of columns associated with an appointment
     # and they are in the data as "<Column Description (N)>", go through and link all of these
     # together. There is no way of knowning how many (N) a judge may have and it's not sufficient to
     # just look for one column that has data, so loop through and look if _any_ of the appointment
@@ -119,20 +119,6 @@ def _clean_year(value):
     return int(value[-4:]) or None
 
 
-def _parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        '--directory', '-d', type=str, dest='directory', required=True,
-        help="Directory to use")
-
-    parser.add_argument(
-        '--file_name', '-f', type=str, dest='file_name', required=True,
-        help="File name to use")
-
-    return parser.parse_args()
-
-
 def insert_court_types(session):
     select_stmnt = (
         sql.select([Appointment.court_type, Appointment.court_name])
@@ -190,6 +176,20 @@ def insert_unsuccessful(session):
         session.add_all([UnsuccessfulNomination(**row) for row in rows])
 
 
+def _parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        '--directory', '-d', type=str, dest='directory', required=True,
+        help="Directory to use")
+
+    parser.add_argument(
+        '--file_name', '-f', type=str, dest='file_name', required=True,
+        help="File name to use")
+
+    return parser.parse_args()
+
+
 def main():
     args = _parse_args()
     file_name = args.file_name
@@ -200,9 +200,11 @@ def main():
         with open(os.path.join(directory, file_name)) as f:
             row_objs = []
             for row in csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC):
+                # Adds all the tables from the base dataset of appointed judges
                 row_objs.append(get_models(row))
         session.add_all(row_objs)
 
+        # Creates a table of year, party mapping for easier joins
         session.execute(
             """
             INSERT INTO year_party(year, party) (
@@ -216,9 +218,12 @@ def main():
         )
 
         session.flush()
+        # Creates a table with all the unique court types for faster filtering
         insert_court_types(session)
 
+        # Creates a table with stats on each congress (num per party, etc.)
         insert_congress(session)
+        # Creates a table with all the unconfirmed judges by each president
         insert_unsuccessful(session)
 
 

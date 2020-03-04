@@ -11,5 +11,6 @@ COPY models models
 COPY app app
 
 EXPOSE 8000
-ENV PYTHONPATH=.:./app
-ENTRYPOINT ["python", "app/app.py"]
+EXPOSE 8888
+ENV PYTHONPATH=/src:/src/app
+ENV JUPYTERPATH=/src:/src/app

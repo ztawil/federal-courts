@@ -13,6 +13,7 @@ services:
 
   app:
     container_name: courts-app
+    command: ["python", "app/app.py"]
     build:
       # Set the context to project root so we can pull in core dependencies
       context: .
@@ -27,4 +28,23 @@ services:
     env_file: app.env
     ports:
       - "8000:8000"
+    tty: true
+
+  jupyter:
+    container_name: courts-jupyter
+    command: jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --no-browser --NotebookApp.token=''
+    build:
+      # Set the context to project root so we can pull in core dependencies
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    image: courts-app:latest
+    volumes:
+      - ./:/src/
+    restart: always
+    stdin_open: true
+    env_file: app.env
+    ports:
+      - "8888:8888"
     tty: true

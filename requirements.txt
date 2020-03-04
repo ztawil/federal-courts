@@ -1,4 +1,5 @@
 # For scraping wikipedia table
+requests
 bs4==0.0.1
 lxml==4.4.1
 
@@ -8,9 +9,10 @@ dash-daq==0.2.1
 plotly-geo==1.0.0
 dash-cytoscape==0.0.5
 
-# Nice JSON encoder / decoder
-python-rapidjson==0.8.0
-
+# For SQL
 psycopg2-binary==2.8.3
 sqlalchemy==1.3.10
 sqlalchemy-utils==0.34.2
+
+# Jupyter
+jupyter==1.0.0

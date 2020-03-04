@@ -26,6 +26,8 @@ def get_url(host='localhost', port=5432, user='postgres', password='', database=
 default_url = get_url(**db_cfg)
 engine = create_engine(default_url)
 Session = sessionmaker(bind=engine)
+
+
 @contextmanager
 def get_session():
     """Provide a transactional scope around a series of operations."""

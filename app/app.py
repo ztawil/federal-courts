@@ -45,16 +45,6 @@ app.layout = html.Div(
                     ),
                     style={'width': '33%', 'display': 'inline-block'}
                 ),
-                html.Div(
-                    dcc.Dropdown(
-                        id='senate-party-dd',
-                        options=[
-                            {'label': 'Republican', 'value': 'Republican'},
-                            {'label': 'Democratic', 'value': 'Democratic'},
-                            ]
-                    ),
-                    style={'width': '33%', 'display': 'inline-block'}
-                ),
             ]
         ),
         html.Div(
