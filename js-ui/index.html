@@ -37,19 +37,26 @@
 
 <body>
   <div id='visualization div' class='container-fluid'>
-    <div class='row'>
-      <div class='col-8' id='visualization-column'>
+    <div class='row' id='wait-time-visualization-row'>
+      <div class='col-8' id='wait-time-visualization-column'>
         <h1>Visualizing Judges and Wait Times</h1>
-        <div id='visualization'></div>
+        <div id='wait-time-visualization'></div>
       </div>
       <div class='col-4' id='judge-info-column'>
         <h1>Judge Bio</h1>
         <div id='bio-div'></div>
       </div>
     </div>
+    <div class='row' id='school-agg-row'>
+      <div class='col-10' id='school-agg-column'>
+        <h1>Visualizing Judges Educations</h1>
+        <div id='education-visualization'></div>
+      </div>
+    </div>
   </div>
 </body>
 
 <script src='./js/confirmationBoxPlots.js'> </script>
+<script src='./js/educationVis.js'> </script>
 
 </html>

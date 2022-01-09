@@ -252,7 +252,7 @@ const render = dataset => {
   const congressYears = [...yearConfTimesSummaryStats.keys()].sort(d3.ascending)
 
   //Initial SVG
-  const svg = d3.select('#visualization')
+  const svg = d3.select('#wait-time-visualization')
     .append('svg')
     .attr('width', width)
     .attr('height', height);
