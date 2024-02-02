@@ -4,7 +4,7 @@ bs4==0.0.1
 lxml==4.4.1
 
 # For plotting
-dash==1.3.0  # The core dash backend
+dash==2.15.0  # The core dash backend
 dash-daq==0.2.1
 plotly-geo==1.0.0
 dash-cytoscape==0.0.5
